@@ -5,6 +5,7 @@ import time
 from selenium.common.exceptions import NoSuchElementException, ElementNotInteractableException
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+import unicodedata
 
 
 class GarticGuess:
@@ -24,7 +25,7 @@ class GarticGuess:
 
     def load_lines(self):
         self.lines = open("words.txt", "r", encoding="utf8").readlines()
-        self.lines = [line.strip() for line in self.lines]
+        self.lines = [self.normalize_string(line) for line in self.lines]
         self.lines.sort()
 
         with open("words.txt", "w", encoding="utf8") as f:
@@ -32,6 +33,12 @@ class GarticGuess:
                 f.write(line + "\n")
 
         print(f"{len(self.lines)} palavras carregadas com sucesso!")
+        
+    def normalize_string(self, text):
+        utf_string = ''.join(
+            (c for c in unicodedata.normalize('NFD', text) if unicodedata.category(c) != 'Mn')
+        )
+        return utf_string.strip()
 
     def create_possible_words_div(self):
         if self.driver.find_elements(By.ID, 'possible_words'):
@@ -84,9 +91,9 @@ class GarticGuess:
                     separated_letters = [span.text.lower(
                     ) for word_div in self.driver.find_elements(
                         By.CLASS_NAME, 'word') for span in word_div.find_elements(By.TAG_NAME, 'span')]
-                    complete_word = ''.join(
-                        separated_letters)
-
+                    complete_word = self.normalize_string(''.join(separated_letters))
+    
+            
                     possible_words = self.extract_words(
                         len(separated_letters), complete_word)
 
